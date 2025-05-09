@@ -13,12 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include "encoder.h"
 
 int g_Encoder_A_Now = 0;
 int g_Encoder_B_Now = 0;
 
-// 定时器3通道1通道2连接编码器M1A M1B  对应GPIO PA6 PA7
+// 定时器3通道1通道2连接编码器M1A M1B
 void Encoder_Init_TIM3(void)
 {
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
@@ -26,15 +27,15 @@ void Encoder_Init_TIM3(void)
   GPIO_InitTypeDef GPIO_InitStructure;
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-  RCC_APB2PeriphClockCmd(Hal_1A_RCC, ENABLE);
-  GPIO_InitStructure.GPIO_Pin = Hal_1A_PIN;
+  RCC_APB2PeriphClockCmd(Hal_2A_RCC, ENABLE);
+  GPIO_InitStructure.GPIO_Pin = Hal_2A_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  GPIO_Init(Hal_1A_PORT, &GPIO_InitStructure);
+  GPIO_Init(Hal_2A_PORT, &GPIO_InitStructure);
 
-  RCC_APB2PeriphClockCmd(Hal_1B_RCC, ENABLE);
-  GPIO_InitStructure.GPIO_Pin = Hal_1B_PIN;
+  RCC_APB2PeriphClockCmd(Hal_2B_RCC, ENABLE);
+  GPIO_InitStructure.GPIO_Pin = Hal_2B_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  GPIO_Init(Hal_1B_PORT, &GPIO_InitStructure);
+  GPIO_Init(Hal_2B_PORT, &GPIO_InitStructure);
 
   TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
   TIM_TimeBaseStructure.TIM_Prescaler = 0x0;                  // 预分频器
@@ -49,11 +50,12 @@ void Encoder_Init_TIM3(void)
   TIM_ClearFlag(TIM3, TIM_FLAG_Update);
   TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 
+  TIM_SetCounter(TIM3, 0);
   TIM3->CNT = 0x7fff;
   TIM_Cmd(TIM3, ENABLE);
 }
 
-// 定时器4通道1通道2连接编码器M2A M2B 对应GPIO PB6 PB7
+// 定时器4通道1通道2连接编码器M2A M2B
 void Encoder_Init_TIM4(void)
 {
   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
@@ -83,7 +85,7 @@ void Encoder_Init_TIM4(void)
   TIM_ICInit(TIM4, &TIM_ICInitStructure);
   TIM_ClearFlag(TIM4, TIM_FLAG_Update);                       // 清除TIM的更新标志位
   TIM_ITConfig(TIM4, TIM_IT_Update, ENABLE);
-
+  TIM_SetCounter(TIM4, 0);
   TIM4->CNT = 0x7fff;
   TIM_Cmd(TIM4, ENABLE);
 }

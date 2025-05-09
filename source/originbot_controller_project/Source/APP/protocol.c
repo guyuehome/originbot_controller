@@ -13,42 +13,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include "protocol.h"
 #include "Main.h"
 #include "UART1.h"
 #include "DIO.h"
 #include "JY901.h"
 
-// ÃüÁî½ÓÊÕ»º´æ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½ï¿½
 u8 RxBuffer[PTO_MAX_BUF_LEN];
-// ½ÓÊÕÊı¾İÏÂ±ê
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â±ï¿½
 u8 RxIndex = 0;
-// ½ÓÊÕ×´Ì¬»ú
+// ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½
 u8 RxFlag = 0;
-// ĞÂÃüÁî½ÓÊÕ±êÖ¾
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ±ï¿½Ö¾
 u8 New_CMD_flag;
-// ĞÂÃüÁîÊı¾İ³¤¶È
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ³ï¿½ï¿½ï¿½
 u8 New_CMD_length;
 
-// »ñÈ¡½ÓÊÕµÄÊı¾İ
+// ï¿½ï¿½È¡ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½
 u8* Get_RxBuffer(void)
 {
   return (u8*)RxBuffer;
 }
 
-// »ñÈ¡ÃüÁî³¤¶È
+// ï¿½ï¿½È¡ï¿½ï¿½ï¿½î³¤ï¿½ï¿½
 u8 Get_CMD_Length(void)
 {
   return New_CMD_length;
 }
 
-// »ñÈ¡ÃüÁî±êÖ¾
+// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
 u8 Is_Recv_New_Cmd(void)
 {
   return New_CMD_flag;
 }
 
-// Çå³ıÃüÁîÊı¾İºÍÏà¹Ø±êÖ¾
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İºï¿½ï¿½ï¿½Ø±ï¿½Ö¾
 void Clear_CMD_Flag(void)
 {
   #if ENABLE_CLEAR_RXBUF
@@ -59,18 +60,18 @@ void Clear_CMD_Flag(void)
   New_CMD_flag = 0;
 }
 
-// RxBufferÖÃ0
+// RxBufferï¿½ï¿½0
 void Clear_RxBuffer(void)
 {
   for (u8 i = 0; i < PTO_MAX_BUF_LEN; i++)
     RxBuffer[i] = 0;
 }
 
-// Ö¸Áî½âÎö£¬´«Èë½ÓÊÕµ½µÄÍêÕûÖ¸Áî£¬¼°Æä³¤¶È
+// Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ä³¤ï¿½ï¿½
 void Parse_Cmd_Data(u8 *data_buf, u8 num)
 {
   #if ENABLE_CHECKSUM
-  // ¼ÆËãĞ£Ñé
+  // ï¿½ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½
   int sum = 0;
   for (u8 i = 3; i < (num - 2); i++)
     sum += *(data_buf + i);
@@ -81,13 +82,13 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
     return;
   #endif
 
-  // ÅĞ¶ÏÖ¡Í·
+  // ï¿½Ğ¶ï¿½Ö¡Í·
   if (!(*(data_buf) == 0x55))
     return;
 
   u8 func_id = *(data_buf + 1);
   switch (func_id) {
-  // ÅĞ¶Ï¹¦ÄÜ×Ö£ºËÙ¶È¿ØÖÆ
+  // ï¿½Ğ¶Ï¹ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½Ù¶È¿ï¿½ï¿½ï¿½
   case FUNC_MOTION:
   {
     u8 index_l = *(data_buf + 3);
@@ -102,11 +103,11 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
     break;
   }
   
-  // ÅĞ¶Ï¹¦ÄÜ×Ö£ºLED¡¢·äÃùÆ÷×´Ì¬¡¢imuĞ£×¼
+  // ï¿½Ğ¶Ï¹ï¿½ï¿½ï¿½ï¿½Ö£ï¿½LEDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½imuĞ£×¼
   case FUNC_BEEP_LED:
   {
-    u8 led_ctrl_en = *(data_buf + 3); // Ê¹ÄÜ¿ØÖÆ×Ö¶Î
-    u8 led = *(data_buf + 4);         // ×´Ì¬×Ö¶Î
+    u8 led_ctrl_en = *(data_buf + 3); // Ê¹ï¿½Ü¿ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½
+    u8 led = *(data_buf + 4);         // ×´Ì¬ï¿½Ö¶ï¿½
     if (led_ctrl_en) {
       if (led)
         LED_ON();
@@ -114,8 +115,8 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
         LED_OFF();
     }
 
-    u8 buzzer_ctrl_en = *(data_buf + 5); // Ê¹ÄÜ¿ØÖÆ×Ö¶Î
-    u8 buzzer = *(data_buf + 6);         // ×´Ì¬×Ö¶Î
+    u8 buzzer_ctrl_en = *(data_buf + 5); // Ê¹ï¿½Ü¿ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½
+    u8 buzzer = *(data_buf + 6);         // ×´Ì¬ï¿½Ö¶ï¿½
     if (buzzer_ctrl_en) {
       if (buzzer)
         BUZZER_ON();
@@ -123,21 +124,15 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
         BUZZER_OFF();
     }
 
-    u8 calibration_ctrl_en = *(data_buf + 7); // Ê¹ÄÜ¿ØÖÆ×Ö¶Î
-    u8 calibration = *(data_buf + 8);         // ×´Ì¬×Ö¶Î
+    u8 calibration_ctrl_en = *(data_buf + 7); // Ê¹ï¿½Ü¿ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½
+    u8 calibration = *(data_buf + 8);         // ×´Ì¬ï¿½Ö¶ï¿½
     if (calibration_ctrl_en && calibration)
-		{
-			#if ENABLE_ICM42670P
-			
-			#else
-			jy901_calibration();
-			#endif
-		}
+      jy901_calibration();
 
     break;
   }
   
-  // ÅĞ¶Ï¹¦ÄÜ×Ö£º×óÂÖPID²ÎÊı
+ // Ã…ÃÂ¶ÃÂ¹Â¦Ã„ÃœÃ—Ã–Â£ÂºÃ—Ã³Ã‚Ã–PIDÂ²ÃÃŠÃ½
   case FUNC_SET_LEFT_PID:
   {
     u16 kp_recv = *(data_buf + 4);
@@ -157,7 +152,7 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
     break;
   }
 	
-	// ÅĞ¶Ï¹¦ÄÜ×Ö£ºÓÒÂÖPID²ÎÊı
+	// Ã…ÃÂ¶ÃÂ¹Â¦Ã„ÃœÃ—Ã–Â£ÂºÃ“Ã’Ã‚Ã–PIDÂ²ÃÃŠÃ½
   case FUNC_SET_RIGHT_PID:
   {
     u16 kp_recv = *(data_buf + 4);
@@ -182,7 +177,7 @@ void Parse_Cmd_Data(u8 *data_buf, u8 num)
   }
 }
 
-// ½ÓÊÕ´®¿Úµ¥×Ö½ÚÊı¾İ½ÓÊÕ²¢±£´æ
+// ï¿½ï¿½ï¿½Õ´ï¿½ï¿½Úµï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½İ½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½
 void Upper_Data_Receive(u8 Rx_Temp)
 {
   switch (RxFlag) {
@@ -199,7 +194,7 @@ void Upper_Data_Receive(u8 Rx_Temp)
     break;
   }
 
-  // ±êÊ¶Î»
+  // ï¿½ï¿½Ê¶Î»
   case 1:
   {
     if (Rx_Temp == 0x01 || Rx_Temp == 0x07 || Rx_Temp == 0x08) {
@@ -214,10 +209,10 @@ void Upper_Data_Receive(u8 Rx_Temp)
     break;
   }
 
-  // Êı¾İÎ»³¤¶È
+  // ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
   case 2:
   {
-    // New_CMD_lengthÎªÊı¾İÖ¡×Ü×Ö½ÚÊı = Ö¡Í·+±êÊ¶Î»+³¤¶È+Ğ£ÑéÎ»+Ö¡Î²(5 bytes)+Êı¾İÎ»
+    // New_CMD_lengthÎªï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ = Ö¡Í·+ï¿½ï¿½Ê¶Î»+ï¿½ï¿½ï¿½ï¿½+Ğ£ï¿½ï¿½Î»+Ö¡Î²(5 bytes)+ï¿½ï¿½ï¿½ï¿½Î»
     New_CMD_length = Rx_Temp+5;
     if (New_CMD_length >= PTO_MAX_BUF_LEN) {
       RxIndex = 0;
@@ -233,7 +228,7 @@ void Upper_Data_Receive(u8 Rx_Temp)
     break;
   }
 
-  // ¶ÁÈ¡ÍêÊ£ÓàµÄËùÓĞ×Ö¶Î
+  // ï¿½ï¿½È¡ï¿½ï¿½Ê£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½
   case 3:
   {
     RxBuffer[RxIndex] = Rx_Temp;
@@ -243,12 +238,6 @@ void Upper_Data_Receive(u8 Rx_Temp)
       RxIndex = 0;
       RxFlag = 0;
     }
-		else if(RxIndex >= New_CMD_length)
-		{
-			memset(RxBuffer,0,sizeof(RxBuffer));//·ÀÖ¹¼üÅÌ¶Ì°´¿ØÖÆËÀ»ú
-			RxIndex = 0;
-      RxFlag = 0;
-		}
     break;
   }
 

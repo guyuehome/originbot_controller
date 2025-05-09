@@ -35,9 +35,6 @@
 
 *.stackdump
 
-# Keil Listing/Object/Hex files
-source/originbot_controller_project/Obj
-source/originbot_controller_project/List
-source/originbot_controller_project/DebugConfig
-source/originbot_controller_project/Project.uvguix.*
-source/originbot_controller_project/*.scvd
+project/Obj
+project/List
+project/Project.uvguix.*

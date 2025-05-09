@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include "delay.h"
 #include "misc.h"   
 static u8  fac_us=0; // us延时倍乘数
@@ -37,77 +38,45 @@ void SysTick_init(u8 SYSCLK,u16 nms)
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 }
+void delay_us(u32 nus)
+{		
+	u32 ticks;
+	u32 told,tnow,tcnt=0;
+	u32 reload=SysTick->LOAD;				//LOAD的值	    	 
+	ticks=nus*fac_us; 						//需要的节拍数 
+	told=SysTick->VAL;        				//刚进入时的计数器值
+	while(1)
+	{
+		tnow=SysTick->VAL;	
+		if(tnow!=told)
+		{	    
+			if(tnow<told)tcnt+=told-tnow;	//这里注意一下SYSTICK是一个递减的计数器就可以了.
+			else tcnt+=reload-tnow+told;	    
+			told=tnow;
+			if(tcnt>=ticks)break;			//时间超过/等于要延迟的时间,则退出.
+		}  
+	};										    
+}  
 
-volatile unsigned char ucTimeFlag = 0,ucDelayFlag = 0;
+void Delay_Ms(u16 nms)
+{	
+	if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED)//系统已经运行
+	{		
+		if(nms>=fac_ms)
+		{ 
+   			vTaskDelay(nms/fac_ms);
+		}
+		nms%=fac_ms;  
+	}
+	delay_us((u16)(nms*1000));
+}
 
+unsigned char ucTimeFlag = 0,ucDelayFlag = 0;
+extern void xPortSysTickHandler(void);
 void SysTick_Handler(void) 
 {      
-  ucTimeFlag=1;
-  if (ucDelayFlag)
-    ucDelayFlag--;
-}
-
-unsigned char CheckSystemTick(void)
-{  
-  if (ucTimeFlag) {
-    ucTimeFlag = 0;
-    return 1;
-  }
-
-  return 0;
-}
-
-// SysTick->LOAD为24位寄存器,所以,最大延时为:
-// nms<=0xffffff*8*1000/SYSCLK
-// SYSCLK单位为Hz,nms单位为ms
-// 毫秒级延时  延时nms  nms<=1864
-void Delay_Ms(u16 nms)
-{
-  u32 Start = SysTick->VAL;
-  u32 Span = (u32)nms * fac_ms; // 时间加载(SysTick->LOAD为24bit)
-  u32 End = 0;
-  ucDelayFlag = Span / SysTick->LOAD;
-  End = Span % SysTick->LOAD;
-  if (Start > End) {
-    End = Start - End;
-    while (ucDelayFlag);
-    if (End < 10)
-      while (SysTick->VAL > 10);
-    else      
-      while (SysTick->VAL > End); 
-  } else {
-    ucDelayFlag++;
-    End = (Start + SysTick->LOAD) - End;
-    while (ucDelayFlag);
-    if (End < 10)
-      while (SysTick->VAL > 10);
-    else      
-      while (SysTick->VAL > End); 
-  }            
-}   
-
-// 微秒级延时  延时nus  nms<=1864                       
-void delay_us(u32 nus)
-{    
-  u32 Start = SysTick->VAL;
-  u32 Span = (u32)nus * fac_us; // 时间加载(SysTick->LOAD为24bit)
-  u32 End = 0;
-  ucDelayFlag = Span / SysTick->LOAD;
-  End = Span % SysTick->LOAD;
-  if (Start > End) {
-    End = Start-End;
-    while (ucDelayFlag);
-    if (End < 10)
-      while (SysTick->VAL > 10);
-    else
-      while (SysTick->VAL > End); 
-  } else {
-    ucDelayFlag++;
-    End = (Start + SysTick->LOAD) - End;
-    while (ucDelayFlag);      
-    if (End < 10)
-      while (SysTick->VAL > 10);
-    else
-      while (SysTick->VAL > End); 
-  }            
+    if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED)//系统已经运行
+    {
+        xPortSysTickHandler();	
+    }
 }

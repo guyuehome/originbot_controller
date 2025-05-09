@@ -13,86 +13,87 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include "adc.h"
 #include "delay.h"
 #include "stm32f10x_adc.h"
 #include "Main.h"
 #include "UART1.h"
 
-// ç”µæ± ä½ç”µå‹æ£€æµ‹è®¡æ•°é˜ˆå€¼ï¼Œä¹˜50æ¯«ç§’å°±æ˜¯å»¶è¿Ÿæ—¶é—´ï¼Œå•ä½ä¸ºæ¯«ç§’
-// ä¾‹å¦‚ï¼š10*100=1000ï¼Œå³1ç§’
+// µç³ØµÍµçÑ¹¼ì²â¼ÆÊıãĞÖµ£¬³Ë50ºÁÃë¾ÍÊÇÑÓ³ÙÊ±¼ä£¬µ¥Î»ÎªºÁÃë
+// ÀıÈç£º10*100=1000£¬¼´1Ãë
 #define BAT_CHECK_COUNT         (100)
-#define BAT_LOW_POWER_THRESHOLD (4.4f) // ä½äº9.6Våˆ™è®¤ä¸ºç”µæ± ç”µé‡è¿‡ä½
+#define BAT_LOW_POWER_THRESHOLD (9.6f) // µÍÓÚ9.6VÔòÈÏÎªµç³ØµçÁ¿¹ıµÍ
 
-u8 g_bat_state = 1;          // ç”µæ± ä½ç”µå‹çŠ¶æ€ã€‚æ£€æµ‹åˆ°ä½ç”µå‹åä¸º0ã€‚åªèƒ½é€šè¿‡å¤ä½æ¢å¤1
-int Voltage_Z100 = 0;        // ç”µæ± ç”µå‹å€¼
-int Voltage_Low_Count = 0;   // ä½ç”µå‹è®¡æ•°
+u8 g_bat_state = 1;          // µç³ØµÍµçÑ¹×´Ì¬¡£¼ì²âµ½µÍµçÑ¹ºóÎª0¡£Ö»ÄÜÍ¨¹ı¸´Î»»Ö¸´1
+int Voltage_Z100 = 0;        // µç³ØµçÑ¹Öµ
+int Voltage_Low_Count = 0;   // µÍµçÑ¹¼ÆÊı
 
-// åˆå§‹åŒ–ADCï¼Œä»…ä»¥è§„åˆ™é€šé“ä¸ºä¾‹ï¼Œé»˜è®¤å°†å¼€å¯é€šé“0~3                                     
+// ³õÊ¼»¯ADC£¬½öÒÔ¹æÔòÍ¨µÀÎªÀı£¬Ä¬ÈÏ½«¿ªÆôÍ¨µÀ0~3                                     
 void Adc_Init(void)
 {   
   ADC_InitTypeDef ADC_InitStructure; 
   GPIO_InitTypeDef GPIO_InitStructure;
 
-  // ä½¿èƒ½ADC1é€šé“æ—¶é’Ÿ
+  // Ê¹ÄÜADC1Í¨µÀÊ±ÖÓ
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_ADC1, ENABLE);
  
-  // è®¾ç½®ADCåˆ†é¢‘å› å­6 72M/6=12,ADCæœ€å¤§æ—¶é—´ä¸èƒ½è¶…è¿‡14M
+  // ÉèÖÃADC·ÖÆµÒò×Ó6 72M/6=12,ADC×î´óÊ±¼ä²»ÄÜ³¬¹ı14M
   RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
-  // PA4 ä½œä¸ºæ¨¡æ‹Ÿé€šé“è¾“å…¥å¼•è„š       
+  // PA4 ×÷ÎªÄ£ÄâÍ¨µÀÊäÈëÒı½Å       
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; // æ¨¡æ‹Ÿè¾“å…¥å¼•è„š
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; // Ä£ÄâÊäÈëÒı½Å
   GPIO_Init(GPIOA, &GPIO_InitStructure);  
 
-  ADC_DeInit(ADC1);  // å¤ä½ADC1 
+  ADC_DeInit(ADC1);  // ¸´Î»ADC1 
 
-  // ADCå·¥ä½œæ¨¡å¼: ADC1å’ŒADC2å·¥ä½œåœ¨ç‹¬ç«‹æ¨¡å¼
+  // ADC¹¤×÷Ä£Ê½: ADC1ºÍADC2¹¤×÷ÔÚ¶ÀÁ¢Ä£Ê½
   ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
-  // æ¨¡æ•°è½¬æ¢å·¥ä½œåœ¨å•é€šé“æ¨¡å¼
+  // Ä£Êı×ª»»¹¤×÷ÔÚµ¥Í¨µÀÄ£Ê½
   ADC_InitStructure.ADC_ScanConvMode = DISABLE;
-  // æ¨¡æ•°è½¬æ¢å·¥ä½œåœ¨å•æ¬¡è½¬æ¢æ¨¡å¼
+  // Ä£Êı×ª»»¹¤×÷ÔÚµ¥´Î×ª»»Ä£Ê½
   ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
-  // è½¬æ¢ç”±è½¯ä»¶è€Œä¸æ˜¯å¤–éƒ¨è§¦å‘å¯åŠ¨
+  // ×ª»»ÓÉÈí¼ş¶ø²»ÊÇÍâ²¿´¥·¢Æô¶¯
   ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
-  // ADCæ•°æ®å³å¯¹é½
+  // ADCÊı¾İÓÒ¶ÔÆë
   ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-  // é¡ºåºè¿›è¡Œè§„åˆ™è½¬æ¢çš„ADCé€šé“çš„æ•°ç›®
+  // Ë³Ğò½øĞĞ¹æÔò×ª»»µÄADCÍ¨µÀµÄÊıÄ¿
   ADC_InitStructure.ADC_NbrOfChannel = 1;
-  // æ ¹æ®ADC_InitStructä¸­æŒ‡å®šçš„å‚æ•°åˆå§‹åŒ–å¤–è®¾ADCxçš„å¯„å­˜å™¨
+  // ¸ù¾İADC_InitStructÖĞÖ¸¶¨µÄ²ÎÊı³õÊ¼»¯ÍâÉèADCxµÄ¼Ä´æÆ÷
   ADC_Init(ADC1, &ADC_InitStructure);
 
-  // ä½¿èƒ½æŒ‡å®šçš„ADC1
+  // Ê¹ÄÜÖ¸¶¨µÄADC1
   ADC_Cmd(ADC1, ENABLE);
   
-  // ä½¿èƒ½å¤ä½æ ¡å‡†
+  // Ê¹ÄÜ¸´Î»Ğ£×¼
   ADC_ResetCalibration(ADC1);
    
-  // ç­‰å¾…å¤ä½æ ¡å‡†ç»“æŸ
+  // µÈ´ı¸´Î»Ğ£×¼½áÊø
   while (ADC_GetResetCalibrationStatus(ADC1));
   
-  // å¼€å¯ADæ ¡å‡†
+  // ¿ªÆôADĞ£×¼
   ADC_StartCalibration(ADC1);
  
-  // ç­‰å¾…æ ¡å‡†ç»“æŸ
+  // µÈ´ıĞ£×¼½áÊø
   while (ADC_GetCalibrationStatus(ADC1));
 }
 
-// è·å¾—ADCå€¼ï¼Œch:é€šé“å€¼ 0~3
+// »ñµÃADCÖµ£¬ch:Í¨µÀÖµ 0~3
 u16 Get_Adc(u8 ch)   
 {
-  // è®¾ç½®æŒ‡å®šADCçš„è§„åˆ™ç»„é€šé“ï¼Œä¸€ä¸ªåºåˆ—ï¼Œé‡‡æ ·æ—¶é—´
-  // ADC1,ADCé€šé“,é‡‡æ ·æ—¶é—´ä¸º239.5å‘¨æœŸ
+  // ÉèÖÃÖ¸¶¨ADCµÄ¹æÔò×éÍ¨µÀ£¬Ò»¸öĞòÁĞ£¬²ÉÑùÊ±¼ä
+  // ADC1,ADCÍ¨µÀ,²ÉÑùÊ±¼äÎª239.5ÖÜÆÚ
   ADC_RegularChannelConfig(ADC1, ch, 1, ADC_SampleTime_239Cycles5 );              
-  // ä½¿èƒ½æŒ‡å®šçš„ADC1çš„è½¯ä»¶è½¬æ¢å¯åŠ¨åŠŸèƒ½
+  // Ê¹ÄÜÖ¸¶¨µÄADC1µÄÈí¼ş×ª»»Æô¶¯¹¦ÄÜ
   ADC_SoftwareStartConvCmd(ADC1, ENABLE); 
-  // ç­‰å¾…è½¬æ¢ç»“æŸ
+  // µÈ´ı×ª»»½áÊø
   while (!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC ));
-  // è¿”å›æœ€è¿‘ä¸€æ¬¡ADC1è§„åˆ™ç»„çš„è½¬æ¢ç»“æœ
+  // ·µ»Ø×î½üÒ»´ÎADC1¹æÔò×éµÄ×ª»»½á¹û
   return ADC_GetConversionValue(ADC1);
 }
 
-// è·å¾— ADC å¤šæ¬¡æµ‹é‡å¹³å‡å€¼, ch:é€šé“å€¼ ; times:æµ‹é‡æ¬¡æ•°
+// »ñµÃ ADC ¶à´Î²âÁ¿Æ½¾ùÖµ, ch:Í¨µÀÖµ ; times:²âÁ¿´ÎÊı
 u16 Adc_Get_Average(u8 ch, u8 times)
 {
   u32 temp_val = 0;
@@ -102,7 +103,7 @@ u16 Adc_Get_Average(u8 ch, u8 times)
   return temp_val / times;
 }
 
-// è·å¾—æµ‹å¾—åŸå§‹ç”µå‹å€¼
+// »ñµÃ²âµÃÔ­Ê¼µçÑ¹Öµ
 float Adc_Get_Measure_Volotage(void)
 {
   u16 adcx;
@@ -113,17 +114,17 @@ float Adc_Get_Measure_Volotage(void)
   return temp;
 }
 
-// è·å¾—å®é™…ç”µæ± åˆ†å‹å‰ç”µå‹
+// »ñµÃÊµ¼Êµç³Ø·ÖÑ¹Ç°µçÑ¹
 float Adc_Get_Battery_Volotage(void)
 {
   float temp;
   temp = Adc_Get_Measure_Volotage();
-  // å®é™…æµ‹é‡å€¼æ¯”è®¡ç®—å€¼ä½ä¸€ç‚¹ç‚¹
+  // Êµ¼Ê²âÁ¿Öµ±È¼ÆËãÖµµÍÒ»µãµã
   temp = temp * 5.00f;
   return temp;
 }
 
-// æŸ¥è¯¢ç”µæ± ç”µå‹çŠ¶æ€ï¼Œè¿ç»­å‡ ç§’è¯»åˆ°ä½äº9.6Vè¿”å›0ï¼Œé«˜äº9.6Vè¿”å›1
+// ²éÑ¯µç³ØµçÑ¹×´Ì¬£¬Á¬Ğø¼¸Ãë¶Áµ½µÍÓÚ9.6V·µ»Ø0£¬¸ßÓÚ9.6V·µ»Ø1
 u8 Bat_Update_Power_State(void)
 {
   if (g_bat_state) {
@@ -131,10 +132,7 @@ u8 Bat_Update_Power_State(void)
     if (Voltage_Z100 < (BAT_LOW_POWER_THRESHOLD * 100)) {
       Voltage_Low_Count++;
       if (Voltage_Low_Count > BAT_CHECK_COUNT)
-			{
-				g_bat_state = 0;
-			}
-        
+        g_bat_state = 0;
     } else {
       Voltage_Low_Count = 0;
     }
@@ -142,13 +140,13 @@ u8 Bat_Update_Power_State(void)
   return g_bat_state;
 }
 
-// é©±åŠ¨æ¿ä¾›ç”µæ˜¯å¦æ­£å¸¸ï¼Œæ­£å¸¸è¿”å›1ï¼Œç”µå‹è¿‡ä½è¿”å›0
+// Çı¶¯°å¹©µçÊÇ·ñÕı³££¬Õı³£·µ»Ø1£¬µçÑ¹¹ıµÍ·µ»Ø0
 u8 Bat_Is_Low_Power(void)
 {
   return (g_bat_state == 0);
 }
 
-// ä¸ŠæŠ¥ç”µæ± ç”µé‡
+// ÉÏ±¨µç³ØµçÁ¿
 void Sensor_Send_Data(void)
 {
   #define SensorLEN        7
@@ -164,14 +162,14 @@ void Sensor_Send_Data(void)
   data_buffer[4] = 0;
   data_buffer[5] = 0;
 
-  // æ ¡éªŒä½çš„è®¡ç®—ä½¿ç”¨æ•°æ®ä½å„ä¸ªæ•°æ®ç›¸åŠ  & 0xFF
+  // Ğ£ÑéÎ»µÄ¼ÆËãÊ¹ÓÃÊı¾İÎ»¸÷¸öÊı¾İÏà¼Ó & 0xFF
   for (i = 0; i < SensorLEN - 1; i++)
     checknum += data_buffer[i];
   data_buffer[SensorLEN - 1] = checknum & 0xFF;
 
-  UART1_Put_Char(0x55); // å¸§å¤´
-  UART1_Put_Char(0x06); // æ ‡è¯†ä½
-  UART1_Put_Char(0x06); // æ•°æ®ä½é•¿åº¦(å­—èŠ‚æ•°)
+  UART1_Put_Char(0x55); // Ö¡Í·
+  UART1_Put_Char(0x06); // ±êÊ¶Î»
+  UART1_Put_Char(0x06); // Êı¾İÎ»³¤¶È(×Ö½ÚÊı)
   
   UART1_Put_Char(data_buffer[0]);
   UART1_Put_Char(data_buffer[1]);
@@ -181,5 +179,5 @@ void Sensor_Send_Data(void)
   UART1_Put_Char(data_buffer[5]);
   UART1_Put_Char(data_buffer[6]);
   
-  UART1_Put_Char(0xBB); // å¸§å°¾
+  UART1_Put_Char(0xBB); // Ö¡Î²
 }

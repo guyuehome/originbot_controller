@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include <string.h>
 #include <stdio.h>
 #include "Main.h"
@@ -22,96 +23,126 @@ limitations under the License.
 #include "JY901.h"
 #include "DIO.h"
 #include "adc.h"
-#include "bsp_icm42670P.h"
-#include "app_imu_42670P.h"
 
-int8_t imu_initflag = 1; //0:åˆå§‹åŒ–æˆåŠŸ
-int8_t g_imu_dealflag = 0;
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "misc.h"
 
+void _system_init(void);
+//Task priority    //ÈÎÎñÓÅÏÈ¼¶
+#define START_TASK_PRIO	4
+#define LED_TASK_PRIO 4
+#define BUZZER_TASK_PRIO1 3
+#define RECEIVE_HANDLE_TASK_PRIO 6
+
+//Task stack size //ÈÎÎñ¶ÑÕ»´óĞ¡	
+#define START_STK_SIZE 	128  
+#define LED_STK_SIZE   64
+#define BUZZER_STK_SIZE   64
+
+//Task handle     //ÈÎÎñ¾ä±ú
+TaskHandle_t StartTask_Handler;
+
+//Task function   //ÈÎÎñº¯Êı
+void start_task(void *pvParameters);
+void led_task(void *pvParameters);
+void buzzer_task(void *pvParameters);
+void uart_task(void *pvParameters);
+void receive_handle_task(void *pvParameters);
+
+//Main function //Ö÷º¯Êı
 int main(void)
 {
-	int Call_10ms = 1;
-  // è®¾ç½®æ—¶é’Ÿé¢‘ç‡
-  SysTick_init(72, 10);
+	_system_init(); //Hardware initialization //Ó²¼ş³õÊ¼»¯
+//	Delay_Ms(1000);
+	//Create the start task //´´½¨¿ªÊ¼ÈÎÎñ
+	printf("0");
+	xTaskCreate((TaskFunction_t )start_task,            //Task function   //ÈÎÎñº¯Êı
+							(const char*    )"start_task",          //Task name       //ÈÎÎñÃû³Æ
+							(uint16_t       )START_STK_SIZE,        //Task stack size //ÈÎÎñ¶ÑÕ»´óĞ¡
+							(void*          )NULL,                  //Arguments passed to the task function //´«µİ¸øÈÎÎñº¯ÊıµÄ²ÎÊı
+							(UBaseType_t    )START_TASK_PRIO,       //Task priority   //ÈÎÎñÓÅÏÈ¼¶
+							(TaskHandle_t*  )&StartTask_Handler);   //Task handle     //ÈÎÎñ¾ä±ú   					
+	vTaskStartScheduler();  //Enables task scheduling //¿ªÆôÈÎÎñµ÷¶È	
+	printf("9");
+}
 
-	// åˆå§‹åŒ–ä¸²å£1ï¼Œç”¨äºå’Œä¸»æœºé€šä¿¡
-  UART1_Init(115200);
+//Start task task function //¿ªÊ¼ÈÎÎñÈÎÎñº¯Êı
+void start_task(void *pvParameters)
+{
+    taskENTER_CRITICAL(); //Enter the critical area //½øÈëÁÙ½çÇø
+    //Create the task //´´½¨ÈÎÎñ
+		xTaskCreate(led_task, "led_task", 1000, NULL, 2, NULL);
+		xTaskCreate(buzzer_task, "buzzer_task", 1000, NULL, 3, NULL);
+		xTaskCreate(uart_task, "uart_task2", 1000, NULL, 4, NULL);
+    vTaskDelete(StartTask_Handler); //Delete the start task //É¾³ı¿ªÊ¼ÈÎÎñ
+    taskEXIT_CRITICAL();            //Exit the critical section//ÍË³öÁÙ½çÇø
+}
 
-  // æ³¨æ„delay_ms(ms)ä¸­ï¼Œmså¿…é¡»<=1864
-  Delay_Ms(1000); Delay_Ms(1000);
-  
-  // åˆå§‹åŒ–ADCï¼Œç”¨äºè¯»å–ç”µæ± ç”µå‹
-  Adc_Init();
-  // åˆå§‹åŒ–GPIOï¼Œç”¨äºæ§åˆ¶LEDå’Œèœ‚é¸£å™¨ç­‰
-  GPIO_Config();
-  // åˆå§‹åŒ–ç”µæœºæ§åˆ¶æ¥å£(PWM)
-  MOTOR_GPIO_Init();
-  // è®¾ç½®ä¸åˆ†é¢‘ï¼ŒPWMé¢‘ç‡ 72000000/3600=20khz
-  Motor_PWM_Init(MOTOR_MAX_PULSE, MOTOR_FREQ_DIVIDE);
-  // åˆå§‹åŒ–ç”µæœºç¼–ç å™¨æ¥å£
-  Encoder_Init();
-  // åˆå§‹åŒ–å¿ƒè·³åŒ…å®šæ—¶å™¨
-  TIM1_Init();
-  // åˆå§‹åŒ–PIDæ§åˆ¶
-  PID_Init();
-  
-	
-	#if ENABLE_ICM42670P
-	imu_initflag = icm42670_init();
-	#else
-  // åˆå§‹åŒ–ä¸²å£3ï¼Œç”¨äºè¯»å–é™€èºä»ªæ•°æ®
-  UART3_Init(9600);
+void led_task(void *pvParameters)
+{
+	for(;;)
+	{
+		LED_ON();
+		vTaskDelay(1000/portTICK_RATE_MS);
+		LED_OFF();
+		vTaskDelay(1000/portTICK_RATE_MS);
+	}
+}
 
-  // ç­‰å¾…é™€èºä»ªåˆå§‹åŒ–å®Œæˆ
-	jy901_init();
-	#endif
-	
-	Delay_Ms(1000);
-  
-  // printf("\n\nFirmware Version: V%d.%d\n", VERSION_MAJOR, VERSION_MINOR);h
-  
-  while (1) {
-		
-		if(g_imu_dealflag ==1) //imuæ•°æ®å¤„ç†
-			{
-				g_imu_dealflag = 0;
-				get_icm_attitude();
-			}
-			
-    // æ¥æ”¶ã€è§£æå¹¶å“åº”ä¸»æœºå‘é€çš„ä¸²å£æŒ‡ä»¤
-    if (Is_Recv_New_Cmd()) {
+void buzzer_task(void *pvParameters)
+{	
+	for(;;)
+	{
+    Bat_Update_Power_State();
+    if (Bat_Is_Low_Power()) {
+			BUZZER_ON();
+		}
+		vTaskDelay(100/portTICK_RATE_MS);
+	}
+}
+
+static u32 sysTickCnt=0;
+u32 getSysTickCnt(void)
+{
+	if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED)	//The system is running //ÏµÍ³ÒÑ¾­ÔËĞĞ
+		return xTaskGetTickCount();
+	else
+		return sysTickCnt;
+}
+void uart_task(void *pvParameters)
+{
+	unsigned int lastWakeTime = getSysTickCnt();
+	for(;;)
+  {	
+		if (Is_Recv_New_Cmd()) {
       Parse_Cmd_Data(Get_RxBuffer(), Get_CMD_Length());
       Clear_CMD_Flag();
     }
-    
-    // å‘¨æœŸæ€§ä¸ŠæŠ¥æ•°æ®ç»™ä¸»æœº
-    if (Timer_Get_Count(COUNT_BEAT_ID) == 0) {
-      // æ£€æµ‹ç”µæ± ç”µå‹æ˜¯å¦è¿‡ä½ï¼Œç”µå‹è¿‡ä½ï¼Œèœ‚é¸£å™¨æŠ¥è­¦
-      if (!Bat_Update_Power_State())
-        BUZZER_ON();  
+	//	vTaskDelayUntil(&lastWakeTime, 50/portTICK_RATE_MS);
+		Motion_Send_Data(); 
+		Acc_Send_Data();   
+		Gyro_Send_Data();
+		Angle_Send_Data();
+		Sensor_Send_Data();
+		vTaskDelay(100/portTICK_RATE_MS);
+	}
+}
 
-      // ä¸ŠæŠ¥å‘¨æœŸï¼š40æ¯«ç§’
-      if ((Call_10ms % 4 + 1) == 1) {
-        Motion_Send_Data(); // ç”µæœºé€Ÿåº¦
-				
-				#if ENABLE_ICM42670P 
-						Acc_Send_Data_ICM42670P();// é™€èºä»ª åŠ é€Ÿåº¦
-						Gyro_Send_Data_ICM42670P();// é™€èºä»ª è§’é€Ÿåº¦
-						Angle_Send_Data_ICM42670P();// é™€èºä»ª è§’åº¦
-					#else
-						Acc_Send_Data();    // é™€èºä»ª åŠ é€Ÿåº¦
-						Gyro_Send_Data();   // é™€èºä»ª è§’é€Ÿåº¦
-						Angle_Send_Data();  // é™€èºä»ª è§’åº¦
-					#endif
-        
-        Sensor_Send_Data(); // ç”µæ± ç”µé‡
-      }
-      
-      Call_10ms++;
-      if (Call_10ms >= 8)
-        Call_10ms = 0;
-
-      Timer_Set_Count(COUNT_BEAT_ID, 1);
-    }
-  }
+void _system_init(void)
+{
+	SysTick_init(72, 10);
+  UART3_Init(9600);
+  UART1_Init(115200);
+  jy901_init();
+ // Delay_Ms(1000); Delay_Ms(1000);
+  Adc_Init();
+  GPIO_Config();
+  MOTOR_GPIO_Init();
+  Motor_PWM_Init(MOTOR_MAX_PULSE, MOTOR_FREQ_DIVIDE);
+  Encoder_Init();
+  TIM1_Init();
+  PID_Init();
+//	Delay_Ms(1000); 
 }

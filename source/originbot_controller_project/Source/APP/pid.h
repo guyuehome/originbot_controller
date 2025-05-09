@@ -13,44 +13,52 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #ifndef __PID_H__
 #define __PID_H__
 
 #include "stm32f10x.h"
 
-// PID默认值 ，可在此处修改PID默认值
-#define PID_KP_DEF             (0.8)
-#define PID_KI_DEF             (0.002)
-#define PID_KD_DEF             (1.0)
+// 脳贸脗脰PID脛卢脠脧脰碌
+#define PID_KP_DEF_L             (0.1)
+#define PID_KI_DEF_L             (0.0)
+#define PID_KD_DEF_L             (4.0)
+
+// 脫脪脗脰PID脛卢脠脧脰碌
+#define PID_KP_DEF_R             (0.1)
+#define PID_KI_DEF_R             (0.0)
+#define PID_KD_DEF_R             (4.0)
+
+#define PI 3.1415926f
 
 struct pid_uint
 {
-  s32 U_kk;           //上一次的输出量
-  s32 ekk;            //上一次的输入偏差
-  s32 ekkk;           //前一次的输入偏差
-  s32 Ur;             //限幅输出值,需初始化
-  s32 Kp;             //比例
-  s32 Ki;             //积分
-	s32 Kd;             //微分
+  s32 U_kk;          //脡脧脪禄麓脦碌脛脢盲鲁枚脕驴
+  s32 ekk;       //脡脧脪禄麓脦碌脛脢盲脠毛脝芦虏卯
+  s32 ekkk;      //脟掳脪禄麓脦碌脛脢盲脠毛脝芦虏卯
+  s32 Ur;        //脧脼路霉脢盲鲁枚脰碌,脨猫鲁玫脢录禄炉
+  s32 Kp;        //卤脠脌媒
+  s32 Ki;        //禄媒路脰
+  s32 Kd;        //脦垄路脰
   
-  u8  En;             //开关
-  s16 Adjust;         //调节量
-  s16 speedSet;       //速度设置
-  s16 speedNow;       //当前速度
+  u8  En;             //驴陋鹿脴
+  s16 Adjust;         //碌梅陆脷脕驴
+  s16 speedSet;       //脣脵露脠脡猫脰脙
+  s16 speedNow;       //碌卤脟掳脣脵露脠
 };
 
 typedef struct
 {
-  float SetPoint;   // 设定目标Desired value
-  float Proportion; // 比例常数Proportional Const
-  float Integral;   // 积分常数Integral Const
-  float Derivative; // 微分常数Derivative Const
+  float SetPoint;   // 脡猫露篓脛驴卤锚Desired value
+  float Proportion; // 卤脠脌媒鲁拢脢媒Proportional Const
+  float Integral;   // 禄媒路脰鲁拢脢媒Integral Const
+  float Derivative; // 脦垄路脰鲁拢脢媒Derivative Const
   float LastError;  // Error[-1]
   float PrevError;  // Error[-2]
   float SumError;   // Sums of Errors
 } PID;
 
-// 姿态角
+// 脳脣脤卢陆脟
 typedef struct _attitude_t
 {
     float roll;
@@ -58,22 +66,26 @@ typedef struct _attitude_t
     float yaw;
 } attitude_t;
 
-//一阶滤波
-struct lowpass_filter {
-  float y_k;      // 上一次的输出
-  float alpha;    // 滤波器系数
-};
-
 extern struct pid_uint pid_Task_Left;
 extern struct pid_uint pid_Task_Right;
 extern attitude_t g_attitude;
 
 void PID_Init(void);
 void reset_Uk(struct pid_uint *p);
-s32 PID_common(int set,int feedback,struct pid_uint *p,struct lowpass_filter *lpf);
+s32 PID_common(int set,int jiance,struct pid_uint *p);
 void Pid_Ctrl(int *leftMotor, int *rightMotor, float yaw);
 void reset_PID(struct pid_uint *p);
+
+void PID_Reset_Yaw(float yaw);
 void Left_Pid_Update_Value(float kp, float ki, float kd);
 void Right_Pid_Update_Value(float kp, float ki, float kd);
+float PIDCal_car(float NextPoint);
+
+void Pid_Send_param(void);
+
+int PID_Get_Offset(void);
+
+int Pid_Average_Speed_B(int target, int now);
+int Pid_Average_Speed_D(int target, int now);
 
 #endif //__PID_H__

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include <string.h>
 #include <stdio.h>
 #include "JY901.h"
@@ -20,7 +21,6 @@ limitations under the License.
 #include "UART1.h"
 #include "Main.h"
 #include "delay.h"
-#include "DIO.h"
 
 struct STime    stcTime;
 struct SAcc     stcAcc;
@@ -33,11 +33,11 @@ struct SLonLat  stcLonLat;
 struct SGPSV    stcGPSV;
 struct SQ       stcQ;
 
-char JY_CMD_UNLOCK[5] = {0xFF,0xAA,0x69,0x88,0xB5};        	 // 解锁
-char JY_CMD_ALGORITHM[5] = {0xFF,0xAA,0x24,0x01,0x00};       // 设置算法为六轴
-char JY_CMD_ACC_CALIBRATION[5] = {0xFF,0xAA,0x01,0x01,0x00}; // 执行加速度校准模式
-char JY_CMD_YAW_ZERO[5] = {0xFF,0xAA,0x01,0x04,0x00}; 			 // 执行航向角置零
-char JY_CMD_SAVE_CFG[5] = {0xFF,0xAA,0x00,0x00,0x00};        // 保存当前配置
+char JY_CMD_UNLOCK[5] = {0xFF,0xAA,0x69,0x88,0xB5};        	 // 陆芒脣酶
+char JY_CMD_ALGORITHM[5] = {0xFF,0xAA,0x24,0x01,0x00};       // 脡猫脰脙脣茫路篓脦陋脕霉脰谩
+char JY_CMD_ACC_CALIBRATION[5] = {0XFF,0XAA,0X01,0X01,0X00}; // 执行加速度校准模式
+char JY_CMD_YAW_ZERO[5] = {0xFF,0xAA,0x01,0x04,0x00};        // 脰麓脨脨潞陆脧貌陆脟脰脙脕茫
+char JY_CMD_SAVE_CFG[5] = {0XFF,0XAA,0X00,0X00,0X00};        // 保存当前配置
 
 // 通过串口3给陀螺仪发送指令
 void sendcmd(char cmd[])
@@ -49,35 +49,34 @@ void sendcmd(char cmd[])
 void jy901_init(void)
 {
 	sendcmd(JY_CMD_UNLOCK);
-  // 解锁
+  // 陆芒脣酶
   Delay_Ms(100);
 	
   sendcmd(JY_CMD_ALGORITHM);
-  // 等待设置算法
+  // 碌脠麓媒脡猫脰脙脣茫路篓
   Delay_Ms(100);
 	
 	sendcmd(JY_CMD_SAVE_CFG);
   Delay_Ms(100);
-	//保存当前配置
+	//卤拢麓忙碌卤脟掳脜盲脰脙
 }
 
 void jy901_calibration(void)
 {
-	sendcmd(JY_CMD_UNLOCK);
-  // 解锁
+  sendcmd(JY_CMD_UNLOCK);
+  // 陆芒脣酶
   Delay_Ms(100);
-	
+
   sendcmd(JY_CMD_ACC_CALIBRATION);
   // 等待模块校准完成
   Delay_Ms(100);
-	
-	sendcmd(JY_CMD_YAW_ZERO);
-  // 等待航向角置零
+
+  sendcmd(JY_CMD_YAW_ZERO);
+  // 碌脠麓媒潞陆脧貌陆脟脰脙脕茫
   Delay_Ms(100);
 
   sendcmd(JY_CMD_SAVE_CFG);
   Delay_Ms(100);
-
 }
 
 // 串口3数据处理函数，串口每收到一个数据，调用一次

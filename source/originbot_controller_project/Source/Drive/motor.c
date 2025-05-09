@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************************************************/
+
 #include "motor.h"
 #include "Main.h"
 
@@ -111,25 +112,25 @@ void Motor_PWM_Init(u16 arr, u16 psc)
   TIM_Cmd(TIM2, ENABLE);                   //使能定时器2  
 }
 
-void Motor_m1_pwm(float speed)
+void Motor_m1_pwm(int speed)
 {
   if (speed >= 0) {
     PWM1 = 0;
-    PWM2 = speed/1.5;
+    PWM2 = speed;
   } else {
-    PWM1 = myabs(speed)/1.5;
+    PWM1 = myabs(speed);
     PWM2 = 0;
   }
 }
 
-void Motor_m2_pwm(float speed)
+void Motor_m2_pwm(int speed)
 {
   if (speed >= 0) {
-    PWM3 = speed/1.5;
+    PWM3 = speed;
     PWM4 = 0;
   } else {
     PWM3 = 0;
-    PWM4 = myabs(speed)/1.5;
+    PWM4 = myabs(speed);
   }
 }
 
@@ -142,16 +143,16 @@ void Motor_Set_Pwm(u8 id, int speed)
 
   switch (id) {
   case MOTOR_ID_1:
-  
+  {
     Motor_m1_pwm(speed);
     break;
-  
+  }
   
   case MOTOR_ID_2:
-  
+  {
     Motor_m2_pwm(speed);
     break;
-  
+  }
   
   default:
     break;
