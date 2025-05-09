@@ -1,0 +1,43 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.out
+*.app
+
+*.zip
+*.bit
+
+*.stackdump
+
+# Keil Listing/Object/Hex files
+source/originbot_controller_project/Obj
+source/originbot_controller_project/List
+source/originbot_controller_project/DebugConfig
+source/originbot_controller_project/Project.uvguix.*
+source/originbot_controller_project/*.scvd
