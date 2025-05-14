@@ -14,9 +14,9 @@ OriginBot is an open-source intelligent robot suite and a community-driven open-
 
 | Repository                                                      | Description                     |
 | --------------------------------------------------------------- | ------------------------------- |
-| [originbot](https://gitee.com/guyuehome/originbot)              | OriginBot robot-side function package repository |
-| [originbot_desktop](https://gitee.com/guyuehome/originbot_desktop) | OriginBot desktop-side function package repository |
-| [originbot_controller](https://gitee.com/guyuehome/originbot_controller) | OriginBot controller source code repository |
+| [originbot](https://github.com/guyuehome/originbot)              | OriginBot robot-side function package repository |
+| [originbot_desktop](https://github.com/guyuehome/originbot_desktop) | OriginBot desktop-side function package repository |
+| [originbot_controller](https://github.com/guyuehome/originbot_controller) | OriginBot controller source code repository |
 
 ### Community Forum
 
